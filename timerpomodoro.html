@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faka Pomodoro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --pomodoro-color: #d95550;
+            --short-break-color: #4c9195;
+            --long-break-color: #457ca3;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s ease;
+        }
+
+        .pomodoro-active { background-color: var(--pomodoro-color); }
+        .short-break-active { background-color: var(--short-break-color); }
+        .long-break-active { background-color: var(--long-break-color); }
+
+        .timer-container {
+            background-color: rgba(255, 255, 255, 0.15); /* Latar transparan */
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        #mode-display {
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        #timer-display {
+            font-size: 80px;
+            font-weight: 700;
+            color: white;
+            margin: 10px 0;
+        }
+        
+        .mode-buttons {
+            margin-bottom: 20px;
+        }
+
+        .mode-buttons button {
+            background-color: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            border: none;
+            padding: 8px 16px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-buttons button.active {
+            background-color: white;
+        }
+
+        .controls button {
+            background-color: white;
+            color: #333;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin: 20px 10px 0 10px;
+            cursor: pointer;
+            border-radius: 50px; 
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(214, 131, 131, 0.1);
+        }
+
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="timer-container">
+    <div id="mode-display">Faulmar Pomodoro</div>
+    <div id="timer-display">25:00</div>
+    
+    <div class="mode-buttons">
+        <button id="pomodoro-btn" class="active">Pomodoro</button>
+        <button id="short-break-btn">Short Break</button>
+        <button id="long-break-btn">Long Break</button>
+    </div>
+
+    <div class="controls">
+        <button id="start-pause-btn">START</button>
+        <button id="reset-btn">RESET</button>
+    </div>
+</div>
+
+<script>
+    let timer;
+    let totalSeconds;
+    let isRunning = false;
+    let currentMode = 'pomodoro'; // 'pomodoro', 'short', 'long'
+
+    const modes = {
+        pomodoro: 25,
+        short: 5,
+        long: 15
+    };
+
+    const timerDisplay = document.getElementById('timer-display');
+    const modeDisplay = document.getElementById('mode-display');
+    const startPauseBtn = document.getElementById('start-pause-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const pomodoroBtn = document.getElementById('pomodoro-btn');
+    const shortBreakBtn = document.getElementById('short-break-btn');
+    const longBreakBtn = document.getElementById('long-break-btn');
+    const modeButtons = document.querySelectorAll('.mode-buttons button');
+
+
+    function setTimer(mode) {
+        clearInterval(timer);
+        isRunning = false;
+        startPauseBtn.textContent = 'START';
+        currentMode = mode;
+        totalSeconds = modes[mode] * 60;
+        updateTimerDisplay();
+        updateTheme();
+        updateActiveButton();
+    }
+
+    function updateTheme() {
+        document.body.className = ''; // Hapus semua kelas tema sebelumnya
+        if (currentMode === 'pomodoro') {
+            document.body.classList.add('pomodoro-active');
+            modeDisplay.textContent = 'Faulmar Pomodoro';
+        } else if (currentMode === 'short') {
+            document.body.classList.add('short-break-active');
+            modeDisplay.textContent = 'Short Break';
+        } else {
+            document.body.classList.add('long-break-active');
+            modeDisplay.textContent = 'Long Break';
+        }
+        // Ganti warna tombol aktif sesuai tema
+        document.querySelector('.mode-buttons button.active').style.color = `var(--${currentMode}-color)`;
+    }
+    
+    function updateActiveButton() {
+        modeButtons.forEach(button => {
+            button.classList.remove('active');
+            button.style.color = 'rgba(255, 255, 255, 0.8)';
+        });
+        document.getElementById(`${currentMode}-btn`).classList.add('active');
+        updateTheme();
+    }
+    
+    function startPauseTimer() {
+        isRunning = !isRunning;
+        startPauseBtn.textContent = isRunning ? 'PAUSE' : 'START';
+
+        if (isRunning) {
+            timer = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+                if (totalSeconds <= 0) {
+                    clearInterval(timer);
+                    alert("Waktu habis!");
+                    isRunning = false;
+                    startPauseBtn.textContent = 'START';
+                }
+            }, 1000);
+        } else {
+            clearInterval(timer);
+        }
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Event Listeners
+    startPauseBtn.addEventListener('click', startPauseTimer);
+    resetBtn.addEventListener('click', () => setTimer(currentMode));
+    
+    pomodoroBtn.addEventListener('click', () => setTimer('pomodoro'));
+    shortBreakBtn.addEventListener('click', () => setTimer('short'));
+    longBreakBtn.addEventListener('click', () => setTimer('long'));
+
+    setTimer('pomodoro');
+</script>
+</body>
+</html>
